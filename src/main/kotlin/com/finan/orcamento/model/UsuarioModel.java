@@ -1,18 +1,9 @@
 package com.finan.orcamento.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-import org.jetbrains.annotations.NotNull;
-
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Objects;
-
 
 @Entity
 @Table(name="usuario")
@@ -21,45 +12,31 @@ public class UsuarioModel implements Serializable {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @NotBlank
-    @Column(name="nome_usuario")
+    @NotBlank @Column(name="nome_usuario")
     private String nomeUsuario;
 
-    @JsonIgnore
-    @OneToMany(mappedBy = "id")
-    private List<OrcamentoModel> orcamentos = new ArrayList<>();
+    @NotBlank @Column(name="rg_usuario")
+    private String rgUsuario;
 
-    public UsuarioModel(){}
+    @NotBlank @Column(name="cpf_usuario")
+    private String cpfUsuario;
 
-    public UsuarioModel(Long id, String nomeUsuario, List<OrcamentoModel> orcamentos) {
-        this.id = id;
-        this.nomeUsuario = nomeUsuario;
-        this.orcamentos = orcamentos;
-    }
+    @NotBlank @Column(name="nomemae_usuario")
+    private String nomeMaeUsuario;
 
-    public Long getId() {
-        return id;
-    }
+    public UsuarioModel() {}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getNomeUsuario() {
-        return nomeUsuario;
-    }
-
-    public void setNomeUsuario(String nomeUsuario) {
-        this.nomeUsuario = nomeUsuario;
-    }
-
-    public List<OrcamentoModel> getOrcamentos() {
-        return orcamentos;
-    }
-
-    public void setOrcamentos(List<OrcamentoModel> orcamentos) {
-        this.orcamentos = orcamentos;
-    }
+    // Getters and Setters (manter os existentes)
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getNomeUsuario() { return nomeUsuario; }
+    public void setNomeUsuario(String nomeUsuario) { this.nomeUsuario = nomeUsuario; }
+    public String getRgUsuario() {return rgUsuario;}
+    public void setRgUsuario(String rgUsuario) {this.rgUsuario = rgUsuario;}
+    public String getCpfUsuario() {return cpfUsuario;}
+    public void setCpfUsuario(String cpfUsuario) {this.cpfUsuario = cpfUsuario;}
+    public String getNomeMaeUsuario() {return nomeMaeUsuario;}
+    public void setNomeMaeUsuario(String nomeMaeUsuario) {this.nomeMaeUsuario = nomeMaeUsuario;}
 
     @Override
     public boolean equals(Object o) {

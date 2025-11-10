@@ -2,9 +2,6 @@ package com.finan.orcamento.model;
 
 import com.finan.orcamento.model.enums.IcmsEstados;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
@@ -28,64 +25,43 @@ public class OrcamentoModel implements Serializable {
     @Column(name="valor_icms")
     private BigDecimal valorICMS;
 
-    @ManyToOne
-    @JoinColumn(name="usuario_id", referencedColumnName = "id")
-    private UsuarioModel usuario;
+    // CAMPOS PARA O POLIMORFISMO DE ASSOCIAÇÃO
+    @Column(name="destinatario_id")
+    private Long destinatarioId;
+
+    @Column(name="destinatario_tipo")
+    private String destinatarioTipo; // "CLIENTE" ou "USUARIO"
+
+    @Column(name="usuario_responsavel_id")
+    private Long usuarioResponsavelId; // Quem criou o orçamento
 
     public void calcularIcms() {
-        this.valorICMS = this.icmsEstados.getStrategy().calcular(this.valorOrcamento);
+        if (this.icmsEstados != null && this.valorOrcamento != null) {
+            this.valorICMS = this.icmsEstados.getStrategy().calcular(this.valorOrcamento);
+        } else {
+            this.valorICMS = BigDecimal.ZERO;
+        }
     }
 
     public OrcamentoModel(){}
 
-    public OrcamentoModel(Long id, IcmsEstados icmsEstados, @NotNull BigDecimal valorOrcamento, BigDecimal valorICMS, UsuarioModel usuario) {
-        this.id = id;
-        this.icmsEstados = icmsEstados;
-        this.valorOrcamento = valorOrcamento;
-        this.valorICMS = valorICMS;
-        this.usuario = usuario;
-    }
+    // Getters and Setters para os novos campos
+    public Long getDestinatarioId() { return destinatarioId; }
+    public void setDestinatarioId(Long destinatarioId) { this.destinatarioId = destinatarioId; }
+    public String getDestinatarioTipo() { return destinatarioTipo; }
+    public void setDestinatarioTipo(String destinatarioTipo) { this.destinatarioTipo = destinatarioTipo; }
+    public Long getUsuarioResponsavelId() { return usuarioResponsavelId; }
+    public void setUsuarioResponsavelId(Long usuarioResponsavelId) { this.usuarioResponsavelId = usuarioResponsavelId; }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public IcmsEstados getIcmsEstados() {
-        return icmsEstados;
-    }
-
-    public void setIcmsEstados(IcmsEstados icmsEstados) {
-        this.icmsEstados = icmsEstados;
-    }
-
-    @NotNull
-    public BigDecimal getValorOrcamento() {
-        return valorOrcamento;
-    }
-
-    public void setValorOrcamento(@NotNull BigDecimal valorOrcamento) {
-        this.valorOrcamento = valorOrcamento;
-    }
-
-    public BigDecimal getValorICMS() {
-        return valorICMS;
-    }
-
-    public void setValorICMS(BigDecimal valorICMS) {
-        this.valorICMS = valorICMS;
-    }
-
-    public UsuarioModel getUsuario() {
-        return usuario;
-    }
-
-    public void setUsuario(UsuarioModel usuario) {
-        this.usuario = usuario;
-    }
+    // Getters and Setters restantes
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public IcmsEstados getIcmsEstados() { return icmsEstados; }
+    public void setIcmsEstados(IcmsEstados icmsEstados) { this.icmsEstados = icmsEstados; }
+    @NotNull public BigDecimal getValorOrcamento() { return valorOrcamento; }
+    public void setValorOrcamento(@NotNull BigDecimal valorOrcamento) { this.valorOrcamento = valorOrcamento; }
+    public BigDecimal getValorICMS() { return valorICMS; }
+    public void setValorICMS(BigDecimal valorICMS) { this.valorICMS = valorICMS; }
 
     @Override
     public boolean equals(Object o) {

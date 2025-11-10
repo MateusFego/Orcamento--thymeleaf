@@ -21,69 +21,59 @@
         a:hover { text-decoration: underline; }
     </style>
     <meta charset="UTF-8">
-    <title>Cadastro e Pesquisa de Usuários</title>
+    <title>Cadastro e Pesquisa de Clientes</title>
 </head>
 <body>
 
-<a href="/clientes" class="navigation-button">Ir para Cadastro de Clientes</a>
+<a href="/usuarios" class="navigation-button">Ir para Gerenciamento de Usuários</a>
 <a href="/orcamentos/tela" class="navigation-button">Ir para Gerenciamento de Orçamentos</a>
 
 <div class="formulario">
-    <h1 th:text="${usuarioModel.id == null} ? 'Cadastro de Novo Usuário' : 'Atualizar Usuário'"></h1>
-    <form th:action="@{/usuarios}" th:object="${usuarioModel}" method="post">
+    <h1 th:text="${clienteModel.id == null} ? 'Cadastro de Novo Cliente' : 'Atualizar Cliente'"></h1>
+    <form th:action="@{/clientes}" th:object="${clienteModel}" method="post">
 
         <input type="hidden" th:field="*{id}" />
 
-        <label for="nomeUsuario">Nome do Usuário</label>
-        <input type="text" id="nomeUsuario" th:field="*{nomeUsuario}" required>
+        <label for="nomeCliente">Nome do Cliente</label>
+        <input type="text" id="nomeCliente" th:field="*{nomeCliente}" required>
 
-        <label for="rg">RG</label>
-        <input type="text" id="rg" th:field="*{rgUsuario}" required>
-
-        <label for="cpf">CPF</label>
-        <input type="text" id="cpf" th:field="*{cpfUsuario}" required>
-
-        <label for="nomeMae">Nome da Mãe</label>
-        <input type="text" id="nomeMae" th:field="*{nomeMaeUsuario}" required>
+        <label for="cpfCliente">CPF</label>
+        <input type="text" id="cpfCliente" th:field="*{cpfCliente}" required>
 
         <button type="submit">
-            <span th:if="${usuarioModel.id == null}">Salvar Novo Usuário</span>
-            <span th:unless="${usuarioModel.id == null}">Atualizar Usuário</span>
+            <span th:if="${clienteModel.id == null}">Salvar Novo Cliente</span>
+            <span th:unless="${clienteModel.id == null}">Atualizar Cliente</span>
         </button>
     </form>
 </div>
 
 <div class="formulario">
     <h2>Pesquisar por Nome</h2>
-    <form action="/usuarios/buscarPorNome" method="get">
+    <form action="/clientes/buscarPorNome" method="get">
         <label for="nome">Nome:</label>
         <input type="text" id="nome" name="nome" required>
         <button type="submit">Pesquisar</button>
     </form>
 </div>
 
-<h2>Lista de Usuários</h2>
+<h2>Lista de Clientes</h2>
 <table>
     <thead>
     <tr>
         <th>ID</th>
         <th>Nome</th>
-        <th>RG</th>
         <th>CPF</th>
-        <th>Nome da Mãe</th>
         <th>Ações</th>
     </tr>
     </thead>
     <tbody>
-    <tr th:each="usuario : ${usuarios}">
-        <td th:text="${usuario.id}"></td>
-        <td th:text="${usuario.nomeUsuario}"></td>
-        <td th:text="${usuario.rgUsuario}"></td>
-        <td th:text="${usuario.cpfUsuario}"></td>
-        <td th:text="${usuario.nomeMaeUsuario}"></td>
+    <tr th:each="cliente : ${clientes}">
+        <td th:text="${cliente.id}"></td>
+        <td th:text="${cliente.nomeCliente}"></td>
+        <td th:text="${cliente.cpfCliente}"></td>
         <td>
-            <a th:href="@{/usuarios/{id}(id=${usuario.id})}">Editar</a>
-            <a th:href="@{/usuarios/delete/{id}(id=${usuario.id})}" onclick="return confirm('Tem certeza que deseja excluir este usuário?')">Excluir</a>
+            <a th:href="@{/clientes/{id}(id=${cliente.id})}">Editar</a>
+            <a th:href="@{/clientes/delete/{id}(id=${cliente.id})}" onclick="return confirm('Tem certeza que deseja excluir este cliente?')">Excluir</a>
         </td>
     </tr>
     </tbody>

@@ -1,0 +1,317 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+    <style>
+        body { text-align: center; font-family: Arial, sans-serif; background: #f0f2f5; color: #333; }
+        .container { max-width: 900px; margin: 20px auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .navigation-button { margin: 10px; padding: 10px 20px; background-color: #00796b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; text-decoration: none; display: inline-block; }
+        .navigation-button:hover { background-color: #004d40; }
+        .formulario { background-color: #fff; padding: 20px; margin: 20px auto; max-width: 600px; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .formulario h1, .formulario h2 { color: #00796b; }
+        .formulario form { display: flex; flex-direction: column; align-items: center; }
+        .formulario label { margin-top: 10px; font-weight: bold; width: 90%; text-align: left; }
+        .formulario input, .formulario select { padding: 10px; width: 90%; border: 1px solid #ccc; border-radius: 4px; margin-top: 5px; }
+        .search-container { display: flex; align-items: center; width: 90%; margin-top: 5px; }
+        .search-container input { flex-grow: 1; margin-right: 10px; }
+        .formulario button { margin-top: 20px; padding: 10px 20px; background-color: #00796b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        .formulario button:hover { background-color: #004d40; }
+        #destinatarioNomeExibido, #orcamentoBuscaResultados { font-weight: bold; margin-top: 10px; color: #004d40; }
+        #destinatarioResultados { width: 90%; border: 1px solid #ccc; border-radius: 4px; margin-top: 5px; cursor: pointer; }
+        #destinatarioResultados option { padding: 5px; }
+        table { margin: 20px auto; border-collapse: collapse; width: 100%; max-width: 800px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); background: white; }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #00796b; color: white; }
+        tr:nth-child(even) { background-color: #f2f2f2; }
+        .acoes a { color: #00796b; text-decoration: none; margin-right: 10px; }
+        .acoes a:hover { text-decoration: underline; }
+    </style>
+    <meta charset="UTF-8">
+    <title>Gerenciamento de Orçamentos</title>
+</head>
+<body>
+
+<div class="container">
+    <a href="/usuarios" class="navigation-button">Ir para Cadastro de Usuários</a>
+    <a href="/clientes" class="navigation-button">Ir para Cadastro de Clientes</a>
+
+    <div class="formulario">
+        <h1 id="form-title">Cadastro de Novo Orçamento</h1>
+        <form id="orcamento-form">
+            <input type="hidden" id="orcamento-id">
+
+            <input type="hidden" id="destinatario-id">
+            <input type="hidden" id="destinatario-tipo">
+
+            <label for="destinatarioNome">Destinatário do Orçamento (Cliente OU Usuário)</label>
+            <div class="search-container">
+                <input type="text" id="destinatarioNome" placeholder="Nome do Cliente ou Usuário" required>
+                <button type="button" id="search-destinatario-button">Buscar</button>
+            </div>
+            <select id="destinatarioResultados" size="5" style="display: none;"></select>
+            <span id="destinatarioNomeExibido"></span>
+
+            <input type="hidden" id="usuario-id" value="1">
+
+            <label for="valorOrcamento">Valor do Orçamento</label>
+            <input type="number" id="valorOrcamento" step="0.01" required>
+
+            <label for="icmsEstados">Estado do ICMS</label>
+            <select id="icmsEstados" required>
+                <option value="">Selecione...</option>
+                <option value="ICMS_MG">Minas Gerais (ICMS_MG)</option>
+                <option value="ICMS_SP">São Paulo (ICMS_SP)</option>
+                <option value="ICMS_RJ">Rio de Janeiro (ICMS_RJ)</option>
+            </select>
+
+            <button type="submit" id="submit-button">Salvar Orçamento</button>
+        </form>
+    </div>
+
+    <div class="formulario">
+        <h2>Buscar Orçamentos por Destinatário (Nome)</h2>
+        <div class="search-container">
+            <input type="text" id="buscaOrcamentoNomeDestinatario" placeholder="Nome do destinatário">
+            <button type="button" id="buscarOrcamentoButton">Buscar</button>
+        </div>
+        <span id="orcamentoBuscaResultados"></span>
+    </div>
+
+    <h2>Lista de Orçamentos</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Valor do Orçamento</th>
+            <th>Estado do ICMS</th>
+            <th>Valor do ICMS</th>
+            <th>Destinatário ID</th>
+            <th>Tipo</th>
+            <th>Ações</th>
+        </tr>
+        </thead>
+        <tbody id="orcamentos-table-body">
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // ELEMENTOS
+    const orcamentosTableBody = document.getElementById('orcamentos-table-body');
+    const form = document.getElementById('orcamento-form');
+    const orcamentoIdInput = document.getElementById('orcamento-id');
+    const valorOrcamentoInput = document.getElementById('valorOrcamento');
+    const icmsEstadosSelect = document.getElementById('icmsEstados');
+    const formTitle = document.getElementById('form-title');
+    const submitButton = document.getElementById('submit-button');
+
+    // Destinatário (Unificado)
+    const destinatarioNomeInput = document.getElementById('destinatarioNome');
+    const searchDestinatarioButton = document.getElementById('search-destinatario-button');
+    const destinatarioIdInput = document.getElementById('destinatario-id');
+    const destinatarioTipoInput = document.getElementById('destinatario-tipo');
+    const destinatarioResultadosSelect = document.getElementById('destinatarioResultados');
+    const destinatarioNomeExibidoSpan = document.getElementById('destinatarioNomeExibido');
+
+    // Outros
+    const usuarioIdInput = document.getElementById('usuario-id');
+    const buscaOrcamentoNomeDestinatarioInput = document.getElementById('buscaOrcamentoNomeDestinatario');
+    const buscarOrcamentoButton = document.getElementById('buscarOrcamentoButton');
+    const orcamentoBuscaResultadosSpan = document.getElementById('orcamentoBuscaResultados');
+
+
+    // FUNÇÃO DE BUSCA UNIFICADA
+    searchDestinatarioButton.addEventListener('click', async () => {
+        const nome = destinatarioNomeInput.value;
+        if (!nome) {
+            alert('Por favor, digite o nome para buscar.');
+            return;
+        }
+        try {
+            const response = await fetch(`/orcamentos/buscarDestinatario?nome=${nome}`);
+            if (response.status === 404 || response.status === 204) {
+                destinatarioResultadosSelect.style.display = 'none';
+                destinatarioNomeExibidoSpan.innerText = 'Destinatário não encontrado.';
+                destinatarioIdInput.value = '';
+                destinatarioTipoInput.value = '';
+                return;
+            }
+            const resultados = await response.json();
+
+            destinatarioResultadosSelect.innerHTML = '';
+            resultados.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.id;
+                // Exibe NOME, TIPO e IDENTIFICADOR na lista
+                option.text = `${item.nome} (${item.tipo} - ${item.identificador})`;
+                option.setAttribute('data-tipo', item.tipo);
+                destinatarioResultadosSelect.appendChild(option);
+            });
+
+            destinatarioResultadosSelect.style.display = 'block';
+            destinatarioNomeExibidoSpan.innerText = 'Selecione um destinatário da lista.';
+
+        } catch (error) {
+            console.error('Erro ao buscar destinatário:', error);
+            alert('Erro ao buscar destinatário. Por favor, tente novamente.');
+        }
+    });
+
+    destinatarioResultadosSelect.addEventListener('change', () => {
+        const selectedOption = destinatarioResultadosSelect.options[destinatarioResultadosSelect.selectedIndex];
+        destinatarioIdInput.value = selectedOption.value;
+        destinatarioTipoInput.value = selectedOption.getAttribute('data-tipo');
+        destinatarioNomeExibidoSpan.innerText = `Destinatário selecionado: ${selectedOption.text}`;
+        destinatarioResultadosSelect.style.display = 'none';
+        destinatarioNomeInput.value = selectedOption.text.split(' (')[0];
+    });
+
+
+    // FUNÇÕES DE CRUD
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const destinatarioId = destinatarioIdInput.value;
+        const destinatarioTipo = destinatarioTipoInput.value;
+        const usuarioId = usuarioIdInput.value;
+
+        if (!destinatarioId || !destinatarioTipo) {
+            alert('Por favor, busque e selecione um Destinatário válido (Cliente ou Usuário) antes de salvar.');
+            return;
+        }
+        if (!usuarioId) {
+            alert('Erro: ID do Usuário responsável não foi definido.');
+            return;
+        }
+
+        const orcamentoData = {
+            id: orcamentoIdInput.value ? orcamentoIdInput.value : null,
+            valorOrcamento: parseFloat(valorOrcamentoInput.value),
+            icmsEstados: icmsEstadosSelect.value,
+            destinatarioId: parseInt(destinatarioId),
+            destinatarioTipo: destinatarioTipo,
+            usuarioResponsavelId: parseInt(usuarioId)
+        };
+        const method = orcamentoIdInput.value ? 'POST' : 'POST';
+        const url = orcamentoIdInput.value ? `/orcamentos/put/${orcamentoIdInput.value}` : '/orcamentos';
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(orcamentoData)
+            });
+            if (response.ok) {
+                // Limpar campos
+                form.reset();
+                orcamentoIdInput.value = '';
+                formTitle.innerText = 'Cadastro de Novo Orçamento';
+                submitButton.innerText = 'Salvar Orçamento';
+
+                destinatarioIdInput.value = '';
+                destinatarioTipoInput.value = '';
+                destinatarioNomeInput.value = '';
+                destinatarioNomeExibidoSpan.innerText = '';
+                destinatarioResultadosSelect.style.display = 'none';
+
+                fetchOrcamentos();
+            } else {
+                const errorText = await response.text();
+                alert(`Erro ao salvar orçamento: ${errorText}`);
+            }
+        } catch (error) {
+            alert(`Erro ao enviar o formulário: ${error.message}`);
+        }
+    });
+
+    // FUNÇÃO DE RENDERIZAÇÃO (Adaptada para Polimorfismo)
+    function renderOrcamentos(orcamentos) {
+        orcamentosTableBody.innerHTML = '';
+        if (orcamentos.length === 0) {
+            orcamentosTableBody.innerHTML = '<tr><td colspan="7">Nenhum orçamento encontrado.</td></tr>';
+            return;
+        }
+        orcamentos.forEach(orcamento => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${orcamento.id}</td>
+                <td>R$ ${orcamento.valorOrcamento.toFixed(2)}</td>
+                <td>${orcamento.icmsEstados}</td>
+                <td>R$ ${orcamento.valorICMS.toFixed(2)}</td>
+                <td>ID: ${orcamento.destinatarioId || 'N/A'}</td> 
+                <td>${orcamento.destinatarioTipo || 'N/A'}</td>
+                <td class="acoes">
+                    <a href="#" onclick="editOrcamento(${orcamento.id})">Editar</a>
+                    <a href="#" onclick="deleteOrcamento(${orcamento.id})">Excluir</a>
+                </td>
+            `;
+            orcamentosTableBody.appendChild(row);
+        });
+    }
+
+    // FUNÇÃO DE EDIÇÃO (Adaptada para Polimorfismo)
+    async function editOrcamento(id) {
+        try {
+            const response = await fetch(`/orcamentos/pesquisaid/${id}`);
+            const orcamento = await response.json();
+            orcamentoIdInput.value = orcamento.id;
+            valorOrcamentoInput.value = orcamento.valorOrcamento;
+            icmsEstadosSelect.value = orcamento.icmsEstados;
+
+            // Carregar dados do Destinatário (ID e TIPO)
+            if (orcamento.destinatarioId) {
+                destinatarioIdInput.value = orcamento.destinatarioId;
+                destinatarioTipoInput.value = orcamento.destinatarioTipo;
+                destinatarioNomeExibidoSpan.innerText = `ID Destinatário: ${orcamento.destinatarioId} (${orcamento.destinatarioTipo})`;
+            } else {
+                destinatarioIdInput.value = '';
+                destinatarioTipoInput.value = '';
+                destinatarioNomeExibidoSpan.innerText = '';
+            }
+
+            // Define o ID do usuário para a edição (oculto)
+            if (orcamento.usuarioResponsavelId) {
+                usuarioIdInput.value = orcamento.usuarioResponsavelId;
+            }
+
+            formTitle.innerText = 'Atualizar Orçamento';
+            submitButton.innerText = 'Atualizar Orçamento';
+            destinatarioResultadosSelect.style.display = 'none';
+        } catch (error) {
+            console.error('Erro ao buscar orçamento para edição:', error);
+        }
+    }
+
+    // Funções de busca e exclusão existentes (mantidas)
+    async function fetchOrcamentos() {
+        try {
+            const response = await fetch('/orcamentos');
+            const orcamentos = await response.json();
+            renderOrcamentos(orcamentos);
+        } catch (error) {
+            console.error('Erro ao buscar todos os orçamentos:', error);
+            alert('Erro ao carregar orçamentos.');
+        }
+    }
+
+    buscarOrcamentoButton.addEventListener('click', async () => {
+        alert('A busca de Orçamentos por Destinatário ainda requer implementação específica no repositório! A rota /buscarPorNomeUsuario está desativada no back-end.');
+    });
+
+    async function deleteOrcamento(id) {
+        if (confirm('Tem certeza que deseja excluir este orçamento?')) {
+            try {
+                const response = await fetch(`/orcamentos/delete/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    fetchOrcamentos();
+                } else {
+                    alert('Erro ao excluir o orçamento.');
+                }
+            } catch (error) {
+                alert('Erro ao tentar excluir o orçamento.');
+            }
+        }
+    }
+
+    // Inicialização
+    window.onload = fetchOrcamentos;
+</script>
+</body>
+</html>

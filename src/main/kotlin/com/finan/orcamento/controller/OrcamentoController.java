@@ -104,4 +104,35 @@ public class OrcamentoController {
     public ResponseEntity<List<OrcamentoModel>> buscaOrcamentosPorNomeUsuario(@RequestParam("nome") String nome) {
         return ResponseEntity.noContent().build();
     }
+    // Modifique esta função no seu OrcamentoController.java
+    @GetMapping("/destinatario/nome-detalhe") // Nova rota ou ajuste da existente
+    @ResponseBody
+    public ResponseEntity<Map<String, String>> buscarNomeDestinatarioPorIdETipo(
+            @RequestParam("id") Long id,
+            @RequestParam("tipo") String tipo) {
+
+        try {
+            Map<String, String> detalhes = new HashMap<>();
+
+            if ("CLIENTE".equalsIgnoreCase(tipo)) {
+                ClienteModel cliente = clienteService.buscaId(id);
+                detalhes.put("nome", cliente.getNomeCliente());
+                detalhes.put("tipo_identificador", "CPF: " + cliente.getCpfCliente());
+                detalhes.put("tipo_entidade", "CLIENTE");
+                return ResponseEntity.ok(detalhes);
+
+            } else if ("USUARIO".equalsIgnoreCase(tipo)) {
+                UsuarioModel usuario = usuarioService.buscaId(id);
+                detalhes.put("nome", usuario.getNomeUsuario());
+                detalhes.put("tipo_identificador", "RG: " + usuario.getRgUsuario()); // Usando RG para usuário
+                detalhes.put("tipo_entidade", "USUARIO");
+                return ResponseEntity.ok(detalhes);
+
+            } else {
+                return ResponseEntity.badRequest().body(Map.of("erro", "Tipo de destinatário inválido."));
+            }
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("erro", "Destinatário não encontrado."));
+        }
+    }
 }

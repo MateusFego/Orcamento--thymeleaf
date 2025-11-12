@@ -84,7 +84,7 @@
             <th>Valor do Orçamento</th>
             <th>Estado do ICMS</th>
             <th>Valor do ICMS</th>
-            <th>Destinatário ID</th>
+            <th>Destinatário</th>
             <th>Tipo</th>
             <th>Ações</th>
         </tr>
@@ -104,7 +104,6 @@
     const formTitle = document.getElementById('form-title');
     const submitButton = document.getElementById('submit-button');
 
-    // Destinatário (Unificado)
     const destinatarioNomeInput = document.getElementById('destinatarioNome');
     const searchDestinatarioButton = document.getElementById('search-destinatario-button');
     const destinatarioIdInput = document.getElementById('destinatario-id');
@@ -112,7 +111,6 @@
     const destinatarioResultadosSelect = document.getElementById('destinatarioResultados');
     const destinatarioNomeExibidoSpan = document.getElementById('destinatarioNomeExibido');
 
-    // Outros
     const usuarioIdInput = document.getElementById('usuario-id');
     const buscaOrcamentoNomeDestinatarioInput = document.getElementById('buscaOrcamentoNomeDestinatario');
     const buscarOrcamentoButton = document.getElementById('buscarOrcamentoButton');
@@ -141,7 +139,6 @@
             resultados.forEach(item => {
                 const option = document.createElement('option');
                 option.value = item.id;
-                // Exibe NOME, TIPO e IDENTIFICADOR na lista
                 option.text = `${item.nome} (${item.tipo} - ${item.identificador})`;
                 option.setAttribute('data-tipo', item.tipo);
                 destinatarioResultadosSelect.appendChild(option);
@@ -165,8 +162,7 @@
         destinatarioNomeInput.value = selectedOption.text.split(' (')[0];
     });
 
-
-    // FUNÇÕES DE CRUD
+    // FUNÇÕES DE CRUD (MANTIDAS)
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const destinatarioId = destinatarioIdInput.value;
@@ -199,7 +195,6 @@
                 body: JSON.stringify(orcamentoData)
             });
             if (response.ok) {
-                // Limpar campos
                 form.reset();
                 orcamentoIdInput.value = '';
                 formTitle.innerText = 'Cadastro de Novo Orçamento';
@@ -221,22 +216,93 @@
         }
     });
 
-    // FUNÇÃO DE RENDERIZAÇÃO (Adaptada para Polimorfismo)
-    function renderOrcamentos(orcamentos) {
+    // FUNÇÃO AUXILIAR: Busca o nome do usuário responsável
+    async function getNomeUsuario(id) {
+        if (!id) return "N/A";
+        try {
+            // NOTA: Esta API não existe, mas a mantemos para resolver o nome do responsável.
+            // Para produção, você precisa de uma rota /usuarios/{id} que retorne o JSON do usuário.
+            const response = await fetch(`/usuarios/${id}`);
+            if(response.ok) {
+                const data = await response.json();
+                return data.nomeUsuario || `ID: ${id}`;
+            }
+            return `ID: ${id}`;
+        } catch (e) {
+            return `ID: ${id}`;
+        }
+    }
+
+
+    // FUNÇÕES DE RENDERIZAÇÃO CORRIGIDAS PARA RESOLVER O NOME E DETALHE
+
+    async function fetchOrcamentos() {
+        try {
+            const response = await fetch('/orcamentos');
+            const orcamentos = await response.json();
+            await renderOrcamentos(orcamentos);
+        } catch (error) {
+            console.error('Erro ao buscar todos os orçamentos:', error);
+            alert('Erro ao carregar orçamentos.');
+        }
+    }
+
+    async function renderOrcamentos(orcamentos) {
         orcamentosTableBody.innerHTML = '';
         if (orcamentos.length === 0) {
             orcamentosTableBody.innerHTML = '<tr><td colspan="7">Nenhum orçamento encontrado.</td></tr>';
             return;
         }
-        orcamentos.forEach(orcamento => {
+
+        const promises = orcamentos.map(async orcamento => {
+            let nomeDestinatario = 'Não Encontrado';
+            let tipoExibicao = 'Não Definido';
+
+            // 1. Resolve o Nome e Detalhes do Destinatário (Nova API)
+            if (orcamento.destinatarioId && orcamento.destinatarioTipo) {
+                try {
+                    const response = await fetch(`/orcamentos/destinatario/nome-detalhe?id=${orcamento.destinatarioId}&tipo=${orcamento.destinatarioTipo}`);
+                    if (response.ok) {
+                        const detalhes = await response.json();
+
+                        // Captura o NOME para a primeira coluna
+                        nomeDestinatario = detalhes.nome;
+                        // Combina o TIPO e o CPF/RG para a segunda coluna
+                        tipoExibicao = `${detalhes.tipo_entidade} (${detalhes.tipo_identificador})`;
+
+                    } else {
+                        nomeDestinatario = `ID ${orcamento.destinatarioId}`;
+                        tipoExibicao = `(${orcamento.destinatarioTipo} Não Encontrado)`;
+                    }
+                } catch (e) {
+                    nomeDestinatario = `[Erro na Busca]`;
+                    tipoExibicao = `[Erro de Formato]`;
+                }
+            }
+
+            // 2. Resolve o Nome do Usuário Responsável (Assumindo que a API /usuarios/{id} existe)
+            let nomeUsuarioResp = await getNomeUsuario(orcamento.usuarioResponsavelId);
+
+            return {
+                ...orcamento,
+                nomeDestinatario: nomeDestinatario,
+                tipoExibicao: tipoExibicao,
+                nomeUsuarioResp: nomeUsuarioResp
+            };
+        });
+
+        const orcamentosComNomes = await Promise.all(promises);
+
+        // Renderização Final
+        orcamentosComNomes.forEach(orcamento => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${orcamento.id}</td>
                 <td>R$ ${orcamento.valorOrcamento.toFixed(2)}</td>
                 <td>${orcamento.icmsEstados}</td>
                 <td>R$ ${orcamento.valorICMS.toFixed(2)}</td>
-                <td>ID: ${orcamento.destinatarioId || 'N/A'}</td> 
-                <td>${orcamento.destinatarioTipo || 'N/A'}</td>
+                <td>${orcamento.nomeDestinatario}</td>
+                <td>${orcamento.tipoExibicao}</td>
                 <td class="acoes">
                     <a href="#" onclick="editOrcamento(${orcamento.id})">Editar</a>
                     <a href="#" onclick="deleteOrcamento(${orcamento.id})">Excluir</a>
@@ -246,7 +312,7 @@
         });
     }
 
-    // FUNÇÃO DE EDIÇÃO (Adaptada para Polimorfismo)
+    // FUNÇÃO DE EDIÇÃO (Corrigida para usar os detalhes JSON)
     async function editOrcamento(id) {
         try {
             const response = await fetch(`/orcamentos/pesquisaid/${id}`);
@@ -255,14 +321,29 @@
             valorOrcamentoInput.value = orcamento.valorOrcamento;
             icmsEstadosSelect.value = orcamento.icmsEstados;
 
-            // Carregar dados do Destinatário (ID e TIPO)
+            // Carregar dados do Destinatário (Busca o nome para exibição)
             if (orcamento.destinatarioId) {
                 destinatarioIdInput.value = orcamento.destinatarioId;
                 destinatarioTipoInput.value = orcamento.destinatarioTipo;
-                destinatarioNomeExibidoSpan.innerText = `ID Destinatário: ${orcamento.destinatarioId} (${orcamento.destinatarioTipo})`;
+
+                // Chamada para a nova API
+                const nomeResponse = await fetch(`/orcamentos/destinatario/nome-detalhe?id=${orcamento.destinatarioId}&tipo=${orcamento.destinatarioTipo}`);
+                let nomeExibicao = `ID ${orcamento.destinatarioId}`;
+
+                if(nomeResponse.ok) {
+                    const detalhes = await nomeResponse.json();
+                    nomeExibicao = detalhes.nome;
+                    destinatarioNomeExibidoSpan.innerText = `Destinatário atual: ${nomeExibicao} (${detalhes.tipo_identificador})`;
+                } else {
+                    destinatarioNomeExibidoSpan.innerText = `Destinatário atual: ID ${orcamento.destinatarioId} (Não encontrado)`;
+                }
+
+                destinatarioNomeInput.value = nomeExibicao;
+
             } else {
                 destinatarioIdInput.value = '';
                 destinatarioTipoInput.value = '';
+                destinatarioNomeInput.value = '';
                 destinatarioNomeExibidoSpan.innerText = '';
             }
 
@@ -280,17 +361,6 @@
     }
 
     // Funções de busca e exclusão existentes (mantidas)
-    async function fetchOrcamentos() {
-        try {
-            const response = await fetch('/orcamentos');
-            const orcamentos = await response.json();
-            renderOrcamentos(orcamentos);
-        } catch (error) {
-            console.error('Erro ao buscar todos os orçamentos:', error);
-            alert('Erro ao carregar orçamentos.');
-        }
-    }
-
     buscarOrcamentoButton.addEventListener('click', async () => {
         alert('A busca de Orçamentos por Destinatário ainda requer implementação específica no repositório! A rota /buscarPorNomeUsuario está desativada no back-end.');
     });
@@ -313,5 +383,3 @@
     // Inicialização
     window.onload = fetchOrcamentos;
 </script>
-</body>
-</html>
